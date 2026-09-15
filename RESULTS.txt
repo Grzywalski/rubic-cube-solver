@@ -1,0 +1,45 @@
+
+(solve to cross)
+WERSJA 1.0
+calkowity czas:-366.1889111995697, sredni czas:-3.661889111995697 i succes ratio:0.89 i 89 sukcesow
+
+WERSJA 1.1 TIME IMPROVEMENT(NUMPY -> LIST)
+calkowity czas:9.536902666091919, sredni czas:0.09536902666091919 i succes ratio:1.0 i 100 sukcesow
+calkowity czas:100.6296956539154, sredni czas:1.006296956539154 i succes ratio:1.0 i 1000 sukcesow
+
+(solve to f2l - tylko dolna scianka)
+WERSJA 1.3
+calkowity czas:85.85192060470581, sredni czas:8.58519206047058 i succes ratio:0.7 i 7 sukcesow
+calkowity czas:606.025767326355, sredni czas:6.06025767326355 i succes ratio:0.79 i 79 sukcesow
+(obie dolne warstwy)
+calkowity czas:685.8838453292847, sredni czas:68.58838453292847 i succes ratio:0.6 i 6 sukcesow
+
+WERSJA 1.4 (F2L_BOT & F2L -> 4 SEGMENTS F2L)
+calkowity czas:1053.6361346244812, sredni czas:10.536361346244812 i succes ratio:0.97 i 97 sukcesow
+
+WERSJA 1.4 (WYRZUCENIE D I DPrime)
+calkowity czas:408.6103484630585, sredni czas:4.086103484630585 i succes ratio:0.99 i 99 sukcesow
+
+WERSJA 1.5 (IMPROVE SEG4,SEG3,SEG2 I SEG1 WYRZUCAJAC ROZNE RUCHY Z PULI MOVES)
+calkowity czas:101.20296239852905, sredni czas:1.0120296239852906 i succes ratio:1.0 i 100 sukcesow
+calkowity czas:83.76785731315613, sredni czas:0.8376785731315612 i succes ratio:1.0 i 100 sukcesow
+
+WERSJA 1.6 (OSTATNIA WARSTWA)
+czas: tragedia (top perm i top last sredni wynik 20s XDDDDDD)
+
+WERSJA 1.7 (WYCIAGNIECIE BUDOWANIE DICOW POZA SOLV I BUDOWANIE DICOW OD ULOZONEJ KOSTKI NIE LOSOWEJ)
+calkowity czas:259.6050796508789, sredni czas:25.960507965087892 i succes ratio:1.0 i 10 sukcesow
+calkowity czas:182.00668931007385, sredni czas:18.200668931007385 i succes ratio:1.0 i 10 sukcesow
+
+WERSJA 1.8 (ROZDZIELENIE TOP LAST NA TOP LAST EDGE I TOP LAST CORNER)
+calkowity czas:652.8646948337555, sredni czas:65.28646948337556 i succes ratio:0.9 i 9 sukcesow unlucky  
+calkowity czas:1.1944797039031982, sredni czas:1.1944797039031982 i succes ratio:1.0 i 1 sukcesow   lucky
+
+WERSJA 1.9 (USUNIECIE RUCHOW B,BPRIME ,LPRIME I L Z PULI RUCHOW DLA TOP PERM,TOP EDGE I TOP CORNER)
+calkowity czas:100.19264817237854, sredni czas:1.0019264817237854 i succes ratio:0.98 i 98 sukcesow
+calkowity czas:107.27937722206116, sredni czas:1.0727937722206116 i succes ratio:0.99 i 99 sukcesow
+calkowity czas:83.53805351257324, sredni czas:0.8353805351257324 i succes ratio:1.0 i 100 sukcesow
+
+
+
+

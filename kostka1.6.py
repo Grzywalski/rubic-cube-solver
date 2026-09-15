@@ -1,0 +1,1089 @@
+import random
+import time
+
+def rot90_cw(f):
+    """Rotacja 90° w prawo (zgodnie z ruchem wskazówek zegara)"""
+    return [
+        [f[2][0], f[1][0], f[0][0]],
+        [f[2][1], f[1][1], f[0][1]],
+        [f[2][2], f[1][2], f[0][2]]
+    ]
+
+def rot90_ccw(f):
+    """Rotacja 90° w lewo (przeciwnie do ruchu wskazówek)"""
+    return [
+        [f[0][2], f[1][2], f[2][2]],
+        [f[0][1], f[1][1], f[2][1]],
+        [f[0][0], f[1][0], f[2][0]]
+    ]
+class cube:
+    def __init__(self):
+        self.front = [[1,1,1],[1,1,1],[1,1,1]]
+        self.back = [[3,3,3],[3,3,3],[3,3,3]]
+        self.right = [[2,2,2],[2,2,2],[2,2,2]]
+        self.left = [[4,4,4],[4,4,4],[4,4,4]]
+        self.up = [[5,5,5],[5,5,5],[5,5,5]]
+        self.down = [[6,6,6],[6,6,6],[6,6,6]]
+
+
+    def to_bytes(self) -> bytes:
+        return bytes(
+            self.front[0] + self.front[1] + self.front[2] +
+            self.back[0]  + self.back[1]  + self.back[2]  +
+            self.right[0] + self.right[1] + self.right[2] +
+            self.left[0]  + self.left[1]  + self.left[2]  +
+            self.up[0]    + self.up[1]    + self.up[2]    +
+            self.down[0]  + self.down[1]  + self.down[2]
+        )
+        
+    def cross_key(self):
+        return bytes([
+        self.down[0][1], self.down[1][0], self.down[1][1], self.down[1][2], self.down[2][1],
+        self.front[2][1], self.back[2][1], self.right[2][1], self.left[2][1]
+    ])
+    
+    def f2l_key_seg1(self):
+        return bytes([
+            self.down[0][1],self.down[0][2], *self.down[1], self.down[2][1],self.front[2][1],self.front[2][2],self.back[2][1],self.right[2][1],self.right[2][0],self.left[2][1]
+        ])
+        
+    def f2l_key_seg2(self):
+        return bytes([
+            self.down[0][1],self.down[0][2], *self.down[1], self.down[2][1],self.down[2][2],self.front[2][1],self.front[2][2],self.back[2][1],self.back[1][0],self.back[2][0],self.right[2][1],self.right[2][0],self.right[1][2],
+            self.right[2][2],self.left[2][1]
+        ])
+            
+    def f2l_key_seg3(self):
+        return bytes([
+            self.down[0][1],self.down[0][2], *self.down[1], *self.down[2],self.front[2][1],self.front[2][2],*self.back[1],*self.back[2],*self.right[1],*self.right[2],
+            self.left[2][1],self.left[1][0],self.left[2][0]
+        ])
+    def f2l_key_seg4(self):
+        return bytes([*self.down[0],*self.down[1],*self.down[2],*self.front[1],*self.front[2],*self.right[1],*self.right[2],*self.back[1],*self.back[2],*self.left[1],*self.left[2]])
+    
+    def top_cross_key(self):
+        return bytes([*self.up[0],*self.up[1],*self.up[2],*self.front[0],*self.right[0],*self.back[0],*self.left[0]]) 
+    
+    def top_all_key(self):
+        return bytes([*self.front[0],*self.right[0],*self.back[0],*self.left[0]])       
+    
+    def moveR(self):
+        temp = [self.front[0][2], self.front[1][2], self.front[2][2]]
+        self.front[0][2], self.front[1][2], self.front[2][2] = self.down[0][2], self.down[1][2], self.down[2][2]
+        self.down[0][2], self.down[1][2], self.down[2][2] = self.back[2][0], self.back[1][0], self.back[0][0]
+        self.back[0][0], self.back[1][0], self.back[2][0] = self.up[2][2], self.up[1][2], self.up[0][2]
+        self.up[0][2], self.up[1][2], self.up[2][2] = temp[0], temp[1], temp[2]
+        self.right = rot90_cw(self.right)
+
+    def moveRPrime(self):
+        temp = [self.front[0][2], self.front[1][2], self.front[2][2]]
+        self.front[0][2], self.front[1][2], self.front[2][2] = self.up[0][2], self.up[1][2], self.up[2][2]
+        self.up[0][2], self.up[1][2], self.up[2][2] = self.back[2][0], self.back[1][0], self.back[0][0]
+        self.back[0][0], self.back[1][0], self.back[2][0] = self.down[2][2], self.down[1][2], self.down[0][2]
+        self.down[0][2], self.down[1][2], self.down[2][2] = temp[0], temp[1], temp[2]
+        self.right = rot90_ccw(self.right)
+
+    def moveLPrime(self):
+        temp = [self.front[0][0], self.front[1][0], self.front[2][0]]
+        self.front[0][0], self.front[1][0], self.front[2][0] = self.down[0][0], self.down[1][0], self.down[2][0]
+        self.down[0][0], self.down[1][0], self.down[2][0] = self.back[2][2], self.back[1][2], self.back[0][2]
+        self.back[0][2], self.back[1][2], self.back[2][2] = self.up[2][0], self.up[1][0], self.up[0][0]
+        self.up[0][0], self.up[1][0], self.up[2][0] = temp[0], temp[1], temp[2]
+        self.left = rot90_ccw(self.left)
+
+    def moveL(self):
+        temp = [self.front[0][0], self.front[1][0], self.front[2][0]]
+        self.front[0][0], self.front[1][0], self.front[2][0] = self.up[0][0], self.up[1][0], self.up[2][0]
+        self.up[0][0], self.up[1][0], self.up[2][0] = self.back[2][2], self.back[1][2], self.back[0][2]
+        self.back[0][2], self.back[1][2], self.back[2][2] = self.down[2][0], self.down[1][0], self.down[0][0]
+        self.down[0][0], self.down[1][0], self.down[2][0] = temp[0], temp[1], temp[2]
+        self.left = rot90_cw(self.left)
+
+    def moveD(self):
+        temp = self.front[2][:]
+        self.front[2] = self.left[2][:]
+        self.left[2] = self.back[2][:]
+        self.back[2] = self.right[2][:]
+        self.right[2] = temp
+        self.down = rot90_cw(self.down)
+
+    def moveDPrime(self):
+        temp = self.front[2][:]
+        self.front[2] = self.right[2][:]
+        self.right[2] = self.back[2][:]
+        self.back[2] = self.left[2][:]
+        self.left[2] = temp
+        self.down = rot90_ccw(self.down)
+
+    def moveU(self):
+        temp = self.front[0][:]
+        self.front[0] = self.right[0][:]
+        self.right[0] = self.back[0][:]
+        self.back[0] = self.left[0][:]
+        self.left[0] = temp
+        self.up = rot90_cw(self.up)
+
+    def moveUPrime(self):
+        temp = self.front[0][:]
+        self.front[0] = self.left[0][:]
+        self.left[0] = self.back[0][:]
+        self.back[0] = self.right[0][:]
+        self.right[0] = temp
+        self.up = rot90_ccw(self.up)
+
+    def moveF(self):
+        self.front = rot90_cw(self.front)
+        temp = self.up[2][:]
+        self.up[2] = [self.left[2][2], self.left[1][2], self.left[0][2]]
+        self.left[0][2], self.left[1][2], self.left[2][2] = self.down[0][0], self.down[0][1], self.down[0][2]
+        self.down[0] = [self.right[2][0], self.right[1][0], self.right[0][0]]
+        self.right[0][0], self.right[1][0], self.right[2][0] = temp[0], temp[1], temp[2]
+
+    def moveFPrime(self):
+        self.front = rot90_ccw(self.front)
+        temp = self.up[2][:]
+        self.up[2] = [self.right[0][0], self.right[1][0], self.right[2][0]]
+        self.right[0][0], self.right[1][0], self.right[2][0] = self.down[0][2], self.down[0][1], self.down[0][0]
+        self.down[0] = [self.left[0][2], self.left[1][2], self.left[2][2]]
+        self.left[0][2], self.left[1][2], self.left[2][2] = temp[2], temp[1], temp[0]
+
+    def moveB(self):
+        self.back = rot90_cw(self.back)
+        temp = self.up[0][:]
+        self.up[0] = [self.right[0][2], self.right[1][2], self.right[2][2]]
+        self.right[0][2], self.right[1][2], self.right[2][2] = self.down[2][2], self.down[2][1], self.down[2][0]
+        self.down[2] = [self.left[0][0], self.left[1][0], self.left[2][0]]
+        self.left[0][0], self.left[1][0], self.left[2][0] = temp[2], temp[1], temp[0]
+
+    def moveBPrime(self):
+        self.back = rot90_ccw(self.back)
+        temp = self.up[0][:]
+        self.up[0] = [self.left[2][0], self.left[1][0], self.left[0][0]]
+        self.left[0][0], self.left[1][0], self.left[2][0] = self.down[2][0], self.down[2][1], self.down[2][2]
+        self.down[2] = [self.right[2][2], self.right[1][2], self.right[0][2]]
+        self.right[0][2], self.right[1][2], self.right[2][2] = temp[0], temp[1], temp[2]
+
+    def print_every_move(self):
+        moves = [self.moveR,self.moveRPrime,self.moveL,self.moveLPrime,self.moveU,self.moveUPrime,self.moveD,self.moveDPrime,self.moveF,self.moveFPrime,self.moveB,self.moveBPrime]
+        for move in moves:
+            print(f"ruch :{move}")
+            move()
+            move()
+            self.print()
+            print(f"=-=-=-=-=-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=")
+
+    
+    def scramble(self):
+        random.seed(time.time())
+        moves = [self.moveR,self.moveRPrime,self.moveL,self.moveLPrime,self.moveU,self.moveUPrime,self.moveD,self.moveDPrime,self.moveF,self.moveFPrime,self.moveB,self.moveBPrime]
+        ruchy = random.choices(moves,k=15)
+        for ruch in ruchy:
+            ruch()
+        skrócone_nazwy = [ruch.__name__.replace("move", "") for ruch in ruchy]
+        print(" -> ".join(skrócone_nazwy))
+        
+    def solve_to_cross(self):
+        moves = ["R", "RPrime", "L", "LPrime", "U", "UPrime", "D", "DPrime", "F", "FPrime", "B", "BPrime"]
+        move_opposites = {
+        "R": "RPrime", "RPrime": "R",
+        "L": "LPrime", "LPrime": "L",
+        "U": "UPrime", "UPrime": "U",
+        "D": "DPrime", "DPrime": "D",
+        "F": "FPrime", "FPrime": "F",
+        "B": "BPrime", "BPrime": "B"
+    }   
+
+        def check_cross(kostka):
+            down_ok = (
+                kostka.down[1] == [6, 6, 6] and
+                kostka.down[0][1] == 6 and
+                kostka.down[2][1] == 6
+            )
+            f_ok = kostka.front[2][1] == 1
+            b_ok = kostka.back[2][1] == 3
+            r_ok = kostka.right[2][1] == 2
+            l_ok = kostka.left[2][1] == 4
+            return down_ok and f_ok and b_ok and r_ok and l_ok
+
+        def dfs_build_dic(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.cross_key()
+                if key not in dic or len(path) < len(dic[key]):
+                    dic[key] = path.copy()
+                
+                result = dfs_build_dic(cube_copy,max_depth,depth+1,move,path)
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+        
+        def dfs_search(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.cross_key()
+                if key in dic:
+                    candidate = dic[key] + [move_opposites[ele] for ele in path[::-1]]
+                    test = self.copy()
+                    for m in candidate:
+                        getattr(test, f"move{m}")()
+                    if check_cross(test):
+                        for m in candidate:
+                            getattr(self, f"move{m}")()
+                        return candidate
+                
+                result = dfs_search(cube_copy,max_depth,depth+1,move,path)
+                if result:
+                    return result
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+                
+        max_limit = 3
+        path = []
+        dic = {}
+        kopia = self.copy()
+        dic[self.cross_key()] = []
+        dfs_build_dic(kopia, max_depth=max_limit+1, depth=1, last_move=None, path=path)     
+        
+        for current_max_depth in range(1, max_limit+5):
+            path = []
+            find = cube()
+            solution = dfs_search(find, max_depth=current_max_depth, depth=1, last_move=None, path=path)   
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+       
+    # rozwiazuje w 4 krokach f2l : po koleji kazdy naroznik i krawedz na kazdym rogu
+    def solve_f2l_seg1(self):
+        moves = ["R", "RPrime", "L", "LPrime", "U", "UPrime", "F", "FPrime"]
+        move_opposites = {
+        "R": "RPrime", "RPrime": "R",
+        "L": "LPrime", "LPrime": "L",
+        "U": "UPrime", "UPrime": "U",
+        "D": "DPrime", "DPrime": "D",
+        "F": "FPrime", "FPrime": "F",
+        "B": "BPrime", "BPrime": "B"
+    }   
+
+        def check_f2l(kostka):
+            down_ok = (
+                kostka.down[1] == [6, 6, 6] and
+                kostka.down[0][1] == 6 and
+                kostka.down[2][1] == 6 and
+                kostka.down[0][2] == 6
+            )
+            f_ok = (kostka.front[2][1] == 1 and kostka.front[1][2] == 1 and kostka.front[2][2] == 1)
+            b_ok = kostka.back[2][1] == 3
+            r_ok = (kostka.right[2][1] == 2 and kostka.right[1][0] == 2 and kostka.right[2][0] == 2)
+            l_ok = kostka.left[2][1] == 4
+            return down_ok and f_ok and b_ok and r_ok and l_ok
+
+        def dfs_build_dic(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.f2l_key_seg1()
+                if key not in dic or len(path) < len(dic[key]):
+                    dic[key] = path.copy()
+                
+                result = dfs_build_dic(cube_copy,max_depth,depth+1,move,path)
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+        
+        def dfs_search(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.f2l_key_seg1()
+                if key in dic:
+                    candidate = dic[key] + [move_opposites[ele] for ele in path[::-1]]
+                    test = self.copy()
+                    for m in candidate:
+                        getattr(test, f"move{m}")()
+                    if check_f2l(test):
+                        for m in candidate:
+                            getattr(self, f"move{m}")()
+                        return candidate
+                
+                result = dfs_search(cube_copy,max_depth,depth+1,move,path)
+                if result:
+                    return result
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+                
+        max_limit = 4
+        path = []
+        dic = {}
+        kopia = self.copy()
+        dic[self.f2l_key_seg1()] = []
+        dfs_build_dic(kopia, max_depth=max_limit+1, depth=1, last_move=None, path=path)     
+        
+        for current_max_depth in range(1, max_limit+6):
+            path = []
+            find = cube()
+            solution = dfs_search(find, max_depth=current_max_depth, depth=1, last_move=None, path=path)   
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+
+    def solve_f2l_seg2(self):
+            moves = ["L", "LPrime", "U", "UPrime", "B", "BPrime"]
+            move_opposites = {
+            "R": "RPrime", "RPrime": "R",
+            "L": "LPrime", "LPrime": "L",
+            "U": "UPrime", "UPrime": "U",
+            "D": "DPrime", "DPrime": "D",
+            "F": "FPrime", "FPrime": "F",
+            "B": "BPrime", "BPrime": "B"
+        }   
+
+            def check_f2l(kostka):
+                down_ok = (
+                    kostka.down[1] == [6, 6, 6] and
+                    kostka.down[0][1] == 6 and
+                    kostka.down[2][1] == 6 and
+                    kostka.down[0][2] == 6 and 
+                    kostka.down[2][2] == 6
+                )
+                f_ok = (kostka.front[2][1] == 1 and kostka.front[1][2] == 1 and kostka.front[2][2] == 1)
+                b_ok = (kostka.back[2][1] == 3 and kostka.back[1][0] == 3 and kostka.back[2][0] ==3)
+                r_ok = (kostka.right[1] == [2,2,2] and kostka.right[2] == [2,2,2])
+                l_ok = kostka.left[2][1] == 4
+                return down_ok and f_ok and b_ok and r_ok and l_ok
+    
+            def dfs_build_dic(cube_copy,max_depth,depth,last_move,path=None):
+                if path is None:
+                    path = []
+                if max_depth < depth:
+                    return None 
+                for move in moves:
+                    if last_move is not None and move == move_opposites[last_move]:
+                        continue
+                    
+                    method = f"move{move}"
+                    method_undo = f"move{move_opposites[move]}"
+                    getattr(cube_copy,method)()
+                    path.append(move)
+                    
+                    key = cube_copy.f2l_key_seg2()
+                    if key not in dic or len(path) < len(dic[key]):
+                        dic[key] = path.copy()
+                    
+                    result = dfs_build_dic(cube_copy,max_depth,depth+1,move,path)
+                    path.pop()
+                    getattr(cube_copy,method_undo)()
+                return None
+            
+            def dfs_search(cube_copy,max_depth,depth,last_move,path=None):
+                if path is None:
+                    path = []
+                if max_depth < depth:
+                    return None 
+                for move in moves:
+                    if last_move is not None and move == move_opposites[last_move]:
+                        continue
+                    method = f"move{move}"
+                    method_undo = f"move{move_opposites[move]}"
+                    getattr(cube_copy,method)()
+                    path.append(move)
+                    
+                    key = cube_copy.f2l_key_seg2()
+                    if key in dic:
+                        candidate = dic[key] + [move_opposites[ele] for ele in path[::-1]]
+                        test = self.copy()
+                        for m in candidate:
+                            getattr(test, f"move{m}")()
+                        if check_f2l(test):
+                            for m in candidate:
+                                getattr(self, f"move{m}")()
+                            return candidate
+                    
+                    result = dfs_search(cube_copy,max_depth,depth+1,move,path)
+                    if result:
+                        return result
+                    path.pop()
+                    getattr(cube_copy,method_undo)()
+                return None
+                    
+            max_limit = 4
+            path = []
+            dic = {}
+            kopia = self.copy()
+            dic[self.f2l_key_seg2()] = []
+            dfs_build_dic(kopia, max_depth=max_limit+1, depth=1, last_move=None, path=path)     
+            
+            for current_max_depth in range(1, max_limit+6):
+                path = []
+                find = cube()
+                solution = dfs_search(find, max_depth=current_max_depth, depth=1, last_move=None, path=path)   
+                if solution is not None:
+                    return solution
+            return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+    
+    def solve_f2l_seg3(self):
+        moves = ["L", "LPrime", "U", "UPrime", "B", "BPrime"]
+        move_opposites = {
+        "R": "RPrime", "RPrime": "R",
+        "L": "LPrime", "LPrime": "L",
+        "U": "UPrime", "UPrime": "U",
+        "D": "DPrime", "DPrime": "D",
+        "F": "FPrime", "FPrime": "F",
+        "B": "BPrime", "BPrime": "B"
+    }   
+                    
+        def check_f2l(kostka):
+            down_ok = (
+                kostka.down[1] == [6, 6, 6] and
+                kostka.down[0][1] == 6 and
+                kostka.down[2] == [6,6,6] and
+                kostka.down[0][2] == 6
+                
+            )
+            f_ok = (kostka.front[2][1] == 1 and kostka.front[1][2] == 1 and kostka.front[2][2] == 1)
+            b_ok = (kostka.back[1] == [3,3,3] and kostka.back[2] == [3,3,3])
+            r_ok = (kostka.right[1] == [2,2,2] and kostka.right[2] == [2,2,2])
+            l_ok = (kostka.left[2][1] == 4 and kostka.left[1][0] == 4 and kostka.left[2][0] == 4)
+            return down_ok and f_ok and b_ok and r_ok and l_ok
+
+        def dfs_build_dic(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.f2l_key_seg3()
+                if key not in dic or len(path) < len(dic[key]):
+                    dic[key] = path.copy()
+                
+                result = dfs_build_dic(cube_copy,max_depth,depth+1,move,path)
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+        
+        def dfs_search(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.f2l_key_seg3()
+                if key in dic:
+                    candidate = dic[key] + [move_opposites[ele] for ele in path[::-1]]
+                    test = self.copy()
+                    for m in candidate:
+                        getattr(test, f"move{m}")()
+                    if check_f2l(test):
+                        for m in candidate:
+                            getattr(self, f"move{m}")()
+                        return candidate
+                
+                result = dfs_search(cube_copy,max_depth,depth+1,move,path)
+                if result:
+                    return result
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+                
+        max_limit = 4
+        path = []
+        dic = {}
+        kopia = self.copy()
+        dic[self.f2l_key_seg3()] = []
+        dfs_build_dic(kopia, max_depth=max_limit+1, depth=1, last_move=None, path=path)     
+        
+        for current_max_depth in range(1, max_limit+6):
+            path = []
+            find = cube()
+            solution = dfs_search(find, max_depth=current_max_depth, depth=1, last_move=None, path=path)   
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+    
+    def solve_f2l_seg4(self):
+        moves = ["L", "LPrime", "U", "UPrime", "F", "FPrime"]
+        move_opposites = {
+        "R": "RPrime", "RPrime": "R",
+        "L": "LPrime", "LPrime": "L",
+        "U": "UPrime", "UPrime": "U",
+        "D": "DPrime", "DPrime": "D",
+        "F": "FPrime", "FPrime": "F",
+        "B": "BPrime", "BPrime": "B"
+    }   
+                
+        def check_f2l(kostka):
+            down_ok = (
+                kostka.down[1] == [6,6,6] and
+                kostka.down[0] == [6,6,6] and
+                kostka.down[2] == [6,6,6] )
+            f_ok = (kostka.front[1] == [1,1,1] and kostka.front[2] == [1,1,1])
+            b_ok = (kostka.back[1] == [3,3,3] and kostka.back[2] == [3,3,3])
+            r_ok = (kostka.right[1] == [2,2,2] and kostka.right[2] == [2,2,2])
+            l_ok = (kostka.left[1] == [4,4,4] and kostka.left[2] == [4,4,4])
+            return down_ok and f_ok and b_ok and r_ok and l_ok
+
+        def dfs_build_dic(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.f2l_key_seg4()
+                if key not in dic or len(path) < len(dic[key]):
+                    dic[key] = path.copy()
+                
+                result = dfs_build_dic(cube_copy,max_depth,depth+1,move,path)
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+        
+        def dfs_search(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.f2l_key_seg4()
+                if key in dic:
+                    candidate = dic[key] + [move_opposites[ele] for ele in path[::-1]]
+                    test = self.copy()
+                    for m in candidate:
+                        getattr(test, f"move{m}")()
+                    if check_f2l(test):
+                        for m in candidate:
+                            getattr(self, f"move{m}")()
+                        return candidate
+                
+                result = dfs_search(cube_copy,max_depth,depth+1,move,path)
+                if result:
+                    return result
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+                
+        max_limit = 4
+        path = []
+        dic = {}
+        kopia = self.copy()
+        dic[self.f2l_key_seg4()] = []
+        dfs_build_dic(kopia, max_depth=max_limit+1, depth=1, last_move=None, path=path)     
+        
+        for current_max_depth in range(1, max_limit+6):
+            path = []
+            find = cube()
+            solution = dfs_search(find, max_depth=current_max_depth, depth=1, last_move=None, path=path)   
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+
+    def solve_top_cross(self):
+        moves = ["R", "RPrime", "L", "LPrime", "U", "UPrime", "F", "FPrime", "B", "BPrime"]
+        
+        move_opposites = {
+        "R": "RPrime", "RPrime": "R",
+        "L": "LPrime", "LPrime": "L",
+        "U": "UPrime", "UPrime": "U",
+        "D": "DPrime", "DPrime": "D",
+        "F": "FPrime", "FPrime": "F",
+        "B": "BPrime", "BPrime": "B"
+    }   
+        def check_cross(kostka):
+            f2l_ok = (
+                kostka.down[0] == [6,6,6] and kostka.down[1] == [6,6,6] and kostka.down[2] == [6,6,6] and
+                kostka.front[1] == [1,1,1] and kostka.front[2] == [1,1,1] and
+                kostka.back[1]  == [3,3,3] and kostka.back[2]  == [3,3,3] and
+                kostka.right[1] == [2,2,2] and kostka.right[2] == [2,2,2] and
+                kostka.left[1]  == [4,4,4] and kostka.left[2]  == [4,4,4])
+            up_ok = (
+                kostka.up[1] == [5, 5, 5] and
+                kostka.up[0][1] == 5 and
+                kostka.up[2][1] == 5 
+
+            )
+            return up_ok and f2l_ok
+            
+        def check_top(kostka):
+            up_ok = (
+                kostka.up[1] == [5, 5, 5] and
+                kostka.up[0] == [5,5,5] and
+                kostka.up[2] == [5,5,5]
+            )
+            #f_ok = kostka.front[0][1] == 1
+            #b_ok = kostka.back[0][1] == 3
+            #r_ok = kostka.right[0][1] == 2
+            #l_ok = kostka.left[0][1] == 4
+            return up_ok #and f_ok and b_ok and r_ok and l_ok
+
+        def dfs_build_dic(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.top_cross_key()
+                if key not in dic or len(path) < len(dic[key]):
+                    dic[key] = path.copy()
+                
+                result = dfs_build_dic(cube_copy,max_depth,depth+1,move,path)
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+        
+        def dfs_search(cube_copy,max_depth,depth,last_move,path=None):
+            if path is None:
+                path = []
+            if max_depth < depth:
+                return None 
+            for move in moves:
+                if last_move is not None and move == move_opposites[last_move]:
+                    continue
+                method = f"move{move}"
+                method_undo = f"move{move_opposites[move]}"
+                getattr(cube_copy,method)()
+                path.append(move)
+                
+                key = cube_copy.top_cross_key()
+                if key in dic:
+                    candidate = dic[key] + [move_opposites[ele] for ele in path[::-1]]
+                    test = self.copy()
+                    for m in candidate:
+                        getattr(test, f"move{m}")()
+                    if check_cross(test):
+                        for m in candidate:
+                            getattr(self, f"move{m}")()
+                        return candidate
+                
+                result = dfs_search(cube_copy,max_depth,depth+1,move,path)
+                if result:
+                    return result
+                path.pop()
+                getattr(cube_copy,method_undo)()
+            return None
+        
+        max_limit = 4
+        path = []
+        dic = {}
+        kopia = self.copy()
+        dic[self.cross_key()] = []
+        dfs_build_dic(kopia, max_depth=max_limit+1, depth=1, last_move=None, path=path)     
+        
+        for current_max_depth in range(1, max_limit+4):
+            path = []
+            find = cube()
+            solution = dfs_search(find, max_depth=current_max_depth, depth=1, last_move=None, path=path)   
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+    
+    def solve_top_perm(self):
+        moves = ("R", "RPrime", "L", "LPrime", "U", "UPrime", "F", "FPrime", "B", "BPrime")
+        move_opposites = {
+            "R": "RPrime", "RPrime": "R", "L": "LPrime", "LPrime": "L",
+            "U": "UPrime", "UPrime": "U", "D": "DPrime", "DPrime": "D",
+            "F": "FPrime", "FPrime": "F", "B": "BPrime", "BPrime": "B"
+        }
+        FACE_OF_MOVE = {
+            "R": "R", "RPrime": "R", "L": "L", "LPrime": "L",
+            "U": "U", "UPrime": "U", "D": "D", "DPrime": "D",
+            "F": "F", "FPrime": "F", "B": "B", "BPrime": "B",
+        }
+        AXIS_OF_FACE = {"R": 0, "L": 0, "U": 1, "D": 1, "F": 2, "B": 2}
+        SECOND_OF_AXIS = {"L", "D", "B"}
+
+        def is_pruned(last_move, run_len, move):
+            if last_move is None:
+                return False
+            if move == move_opposites[last_move]:
+                return True
+            lf, mf = FACE_OF_MOVE[last_move], FACE_OF_MOVE[move]
+            if mf == lf:
+                return run_len >= 2
+            if AXIS_OF_FACE[lf] == AXIS_OF_FACE[mf] and lf in SECOND_OF_AXIS and mf not in SECOND_OF_AXIS:
+                return True
+            return False
+
+        def check_top(kostka):
+            f2l_ok = (
+                kostka.down[0] == [6,6,6] and kostka.down[1] == [6,6,6] and kostka.down[2] == [6,6,6] and
+                kostka.front[1] == [1,1,1] and kostka.front[2] == [1,1,1] and
+                kostka.back[1]  == [3,3,3] and kostka.back[2]  == [3,3,3] and
+                kostka.right[1] == [2,2,2] and kostka.right[2] == [2,2,2] and
+                kostka.left[1]  == [4,4,4] and kostka.left[2]  == [4,4,4])
+
+            return kostka.up[0] == [5, 5, 5] and kostka.up[1] == [5, 5, 5] and kostka.up[2] == [5, 5, 5] and f2l_ok 
+
+        def dfs_build_dic(cube_copy, move_funcs, max_depth, depth, last_move, run_len, path):
+            if max_depth < depth:
+                return
+            for move, do_move, undo_move in move_funcs:
+                if is_pruned(last_move, run_len, move):
+                    continue
+                do_move()
+                path.append(move)
+
+                key = cube_copy.top_cross_key()
+                entry = dic.get(key)
+                if entry is None or len(path) < len(entry[0]):
+                    dic[key] = (path.copy(), cube_copy._to_tuple())
+
+                new_run_len = run_len + 1 if move == last_move else 1
+                dfs_build_dic(cube_copy, move_funcs, max_depth, depth + 1, move, new_run_len, path)
+                path.pop()
+                undo_move()
+
+        def dfs_search(cube_copy, move_funcs, max_depth, depth, last_move, run_len, path):
+            if max_depth < depth:
+                return None
+            for move, do_move, undo_move in move_funcs:
+                if is_pruned(last_move, run_len, move):
+                    continue
+                do_move()
+                path.append(move)
+
+                up = cube_copy.up
+                f0, r0, b0, l0 = cube_copy.front[0], cube_copy.right[0], cube_copy.back[0], cube_copy.left[0]
+
+                up_id = up[0] + up[1] + up[2]
+                up_ccw1_g = rot90_ccw(up)
+                up_ccw1 = up_ccw1_g[0] + up_ccw1_g[1] + up_ccw1_g[2]
+                up_ccw2_g = rot90_ccw(up_ccw1_g)
+                up_ccw2 = up_ccw2_g[0] + up_ccw2_g[1] + up_ccw2_g[2]
+                up_cw1_g = rot90_cw(up)
+                up_cw1 = up_cw1_g[0] + up_cw1_g[1] + up_cw1_g[2]
+
+                key       = bytes(up_id   + f0 + r0 + b0 + l0)
+                keyU      = bytes(up_ccw1 + r0 + b0 + l0 + f0)
+                keyUU     = bytes(up_ccw2 + b0 + l0 + f0 + r0)
+                keyUPrime = bytes(up_cw1  + l0 + f0 + r0 + b0)
+
+                reverse_moves = None
+                for prefix, lookup_key in (([], key), (["U"], keyU),
+                                            (["U", "U"], keyUU), (["UPrime"], keyUPrime)):
+                    entry = dic.get(lookup_key)
+                    if entry is None:
+                        continue
+                    if reverse_moves is None:
+                        reverse_moves = [move_opposites[ele] for ele in path[::-1]]
+                    stored_path, stored_state = entry
+                    test.load_from_tuple(stored_state)
+                    for m in reverse_moves:
+                        getattr(test, "move" + m)()
+                    if check_top(test):
+                        candidate = prefix + stored_path + reverse_moves
+                        for m in candidate:
+                            getattr(self, "move" + m)()
+                        return candidate
+
+                new_run_len = run_len + 1 if move == last_move else 1
+                result = dfs_search(cube_copy, move_funcs, max_depth, depth + 1, move, new_run_len, path)
+                if result:
+                    return result
+                path.pop()
+                undo_move()
+            return None
+
+        max_limit = 5
+        dic = {}
+        kopia = self.copy()
+        dic[self.top_cross_key()] = ([], kopia._to_tuple())
+
+        kopia_move_funcs = [(m, getattr(kopia, "move" + m), getattr(kopia, "move" + move_opposites[m]))
+                            for m in moves]
+        dfs_build_dic(kopia, kopia_move_funcs, max_depth=max_limit + 1, depth=1,
+                    last_move=None, run_len=0, path=[])
+
+        find = cube()
+        test = cube()
+        find_move_funcs = [(m, getattr(find, "move" + m), getattr(find, "move" + move_opposites[m]))
+                            for m in moves]
+
+        for current_max_depth in range(1, max_limit + 5):
+            solution = dfs_search(find, find_move_funcs, max_depth=current_max_depth,
+                                depth=1, last_move=None, run_len=0, path=[])
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+    
+    def solve_top_last(self):
+        moves = ("R", "RPrime", "L", "LPrime", "U", "UPrime", "F", "FPrime", "B", "BPrime")
+        move_opposites = {
+            "R": "RPrime", "RPrime": "R",
+            "L": "LPrime", "LPrime": "L",
+            "U": "UPrime", "UPrime": "U",
+            "D": "DPrime", "DPrime": "D",
+            "F": "FPrime", "FPrime": "F",
+            "B": "BPrime", "BPrime": "B"
+        }
+
+        solved_ref = cube()
+
+        def check_cube(kostka):
+            return kostka == solved_ref
+
+        def dfs_build_dic(cube_copy, move_funcs, max_depth, depth, last_move, path):
+            if max_depth < depth:
+                return
+            last_opposite = move_opposites[last_move] if last_move is not None else None
+            for move, do_move, undo_move in move_funcs:
+                if move == last_opposite:
+                    continue
+                do_move()
+                path.append(move)
+
+                key = cube_copy.top_all_key()
+                entry = dic.get(key)
+                if entry is None or len(path) < len(entry[0]):
+                    dic[key] = (path.copy(), cube_copy._to_tuple())
+
+                dfs_build_dic(cube_copy, move_funcs, max_depth, depth + 1, move, path)
+                path.pop()
+                undo_move()
+
+        def dfs_search(cube_copy, move_funcs, max_depth, depth, last_move, path):
+            if max_depth < depth:
+                return None
+            last_opposite = move_opposites[last_move] if last_move is not None else None
+
+            for move, do_move, undo_move in move_funcs:
+                if move == last_opposite:
+                    continue
+                do_move()
+                path.append(move)
+
+                f0, r0, b0, l0 = cube_copy.front[0], cube_copy.right[0], cube_copy.back[0], cube_copy.left[0]
+                key       = bytes([*f0, *r0, *b0, *l0])
+                keyU      = bytes([*r0, *b0, *l0, *f0])
+                keyUU     = bytes([*b0, *l0, *f0, *r0])
+                keyUPrime = bytes([*l0, *f0, *r0, *b0])
+
+                reverse_moves = None  
+                for prefix, lookup_key in (([], key), (["U"], keyU),(["U", "U"], keyUU), (["UPrime"], keyUPrime)):
+                    entry = dic.get(lookup_key)
+                    if entry is None:
+                        continue
+                    if reverse_moves is None:
+                        reverse_moves = [move_opposites[ele] for ele in path[::-1]]
+                    stored_path, stored_state = entry
+                    test.load_from_tuple(stored_state)
+                    for m in reverse_moves:
+                        getattr(test, "move" + m)()
+                    if check_cube(test):
+                        candidate = prefix + stored_path + reverse_moves
+                        for m in candidate:
+                            getattr(self, "move" + m)()
+                        return candidate
+
+                result = dfs_search(cube_copy, move_funcs, max_depth, depth + 1, move, path)
+                if result:
+                    return result
+                path.pop()
+                undo_move()
+            return None
+
+        max_limit = 5
+        dic = {}
+        kopia = self.copy()
+        dic[self.cross_key()] = ([], kopia._to_tuple())
+
+        kopia_move_funcs = [(m, getattr(kopia, "move" + m), getattr(kopia, "move" + move_opposites[m]))
+                            for m in moves]
+        dfs_build_dic(kopia, kopia_move_funcs, max_depth=max_limit + 1, depth=1, last_move=None, path=[])
+
+        find = cube()
+        test = cube()   
+        find_move_funcs = [(m, getattr(find, "move" + m), getattr(find, "move" + move_opposites[m]))
+                            for m in moves]
+
+        for current_max_depth in range(1, max_limit + 6):
+            solution = dfs_search(find, find_move_funcs, max_depth=current_max_depth,
+                                depth=1, last_move=None, path=[])
+            if solution is not None:
+                return solution
+        return "Nie znaleziono rozwiązania w zadanym limicie głębokości."
+
+    def movetopos(self,ruchy):
+        for ruch in ruchy:
+            ruch()
+        
+    def print(self):
+        print("front:")
+        print(self.front[0])
+        print(self.front[1])
+        print(self.front[2])
+        print("==========================")
+        print("back:")
+        print(self.back[0])
+        print(self.back[1])
+        print(self.back[2])
+        print("==========================")
+        print("right:")
+        print(self.right[0])
+        print(self.right[1])
+        print(self.right[2])
+        print("==========================")
+        print("left:")
+        print(self.left[0])
+        print(self.left[1])
+        print(self.left[2])
+        print("==========================")
+        print("up:")
+        print(self.up[0])
+        print(self.up[1])
+        print(self.up[2])
+        print("==========================")
+        print("down:")
+        print(self.down[0])
+        print(self.down[1])
+        print(self.down[2])
+            
+    def __eq__(self, other):
+        if not isinstance(other, cube):
+            return False
+        return (
+            self.front == other.front and
+            self.back == other.back and
+            self.right == other.right and
+            self.left == other.left and
+            self.up == other.up and
+            self.down == other.down
+        )
+        
+    def _to_tuple(self):
+        return (
+            tuple(map(tuple, self.front)),
+            tuple(map(tuple, self.back)),
+            tuple(map(tuple, self.right)),
+            tuple(map(tuple, self.left)),
+            tuple(map(tuple, self.up)),
+            tuple(map(tuple, self.down))
+        )
+        
+    def load_from_tuple(self, state):
+        (front, back, right, left, up, down) = state
+        self.front = [list(row) for row in front]
+        self.back  = [list(row) for row in back]
+        self.right = [list(row) for row in right]
+        self.left  = [list(row) for row in left]
+        self.up    = [list(row) for row in up]
+        self.down  = [list(row) for row in down]
+
+    def __hash__(self):
+        return hash(self._to_tuple())
+        
+    def copy(self):
+        new_cube = cube()
+        new_cube.front = [row[:] for row in self.front]
+        new_cube.up = [row[:] for row in self.up]
+        new_cube.right = [row[:] for row in self.right]
+        new_cube.left = [row[:] for row in self.left]
+        new_cube.down = [row[:] for row in self.down]
+        new_cube.back = [row[:] for row in self.back]
+        return new_cube
+
+
+x = cube()
+x.scramble()
+import tracemalloc
+tracemalloc.start()
+timer = time.time()
+a = x.solve_to_cross()
+end1 = time.time()
+b = x.solve_f2l_seg1()
+end2 = time.time()
+c = x.solve_f2l_seg2()
+end3 = time.time()
+d = x.solve_f2l_seg3()
+end4 = time.time()
+e = x.solve_f2l_seg4()
+end5 = time.time()
+f = x.solve_top_cross()
+end6 = time.time()
+g =x.solve_top_perm()
+end7 = time.time()
+h = x.solve_top_last()
+end8 = time.time()
+print(f"\n time all:{time.time()-timer} \n")
+print(f"cross:{end1-timer},  f2l-1:{end2-end1},  f2l-2:{end3-end2},  f2l-3:{end4-end3},  f2l-4:{end5-end4},  top-cross:{end6-end5}  top-perm:{end7-end6}  top-last:{end8-end7}\n")
+print(a , b , c , d , e,f,g,h, sep="\n")
+
+x.print()
+
+current, peak = tracemalloc.get_traced_memory()
+print(f"Aktualne zużycie: {current / 10**6:.2f} MB")
+print(f"Najwyższe zużycie (Peak): {peak / 10**6:.2f} MB")
+tracemalloc.stop()
+

@@ -1,0 +1,36 @@
+x = cube()
+x.scramble()
+
+timer = time.time()
+a = x.solve_to_cross()
+end1 = time.time()
+b = x.solve_f2l_seg1()
+end2 = time.time()
+c = x.solve_f2l_seg2()
+end3 = time.time()
+d = x.solve_f2l_seg3()
+end4 = time.time()
+e = x.solve_f2l_seg4()
+end5 = time.time()
+f = x.solve_top_cross()
+end6 = time.time()
+g =x.solve_top_perm()
+end7 = time.time()
+h = x.solve_top_last_edge()
+end8 = time.time()
+i = x.solve_top_last_corner()
+end9 = time.time()
+print(f"\n time all:{time.time()-timer} \n")
+print(f"cross:{end1-timer},  f2l-1:{end2-end1},  f2l-2:{end3-end2},  f2l-3:{end4-end3},  f2l-4:{end5-end4},  top-cross:{end6-end5}  top-perm:{end7-end6}  top-last-esge:{end8-end7}    top-last-corner:{end9-end8}\n")
+print(a , b , c , d , e,f,g,h,i, sep="\n")
+
+errors = []
+stages = ["cross", "f2l-1", "f2l-2", "f2l-3", "f2l-4", "top-cross", "top-perm", "top-last-edge","top-last-corner"]
+results = [a, b, c, d, e, f, g, h,i]
+if all(isinstance(res, list) for res in results):
+    print("no error")
+else:
+    err_details = [stage for stage, res in zip(stages, results) if isinstance(res, str)]
+    errors.append({"iteracja": i, "błędy": err_details})
+    print("Błędy:", errors)
+x.print()
